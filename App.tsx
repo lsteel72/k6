@@ -15,9 +15,10 @@ const DASHBOARD_CONFIG: Record<number, any> = {
 
 const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [activeClass, setActiveClass] = useState(3);
+  const [activeClass, setActiveClass] = useState(6); // Iniciamos en Klassen 6
   const [lockedMissions, setLockedMissions] = useState<number[]>([]);
-  const [lockedLevels, setLockedLevels] = useState<number[]>([]);
+  // Inicializamos bloqueados 3, 4, 5 y 7
+  const [lockedLevels, setLockedLevels] = useState<number[]>([3, 4, 5, 7]);
   const [selectedQuest, setSelectedQuest] = useState<WebQuest | null>(null);
   const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -42,9 +43,17 @@ const App: React.FC = () => {
         }
       }
 
-      // Cargar persistencia
-      setLockedMissions(JSON.parse(localStorage.getItem('lockedMissions') || '[]'));
-      setLockedLevels(JSON.parse(localStorage.getItem('lockedLevels') || '[]'));
+      // Cargar persistencia si existe, sino mantener el default de bloqueos
+      const savedLocks = localStorage.getItem('lockedMissions');
+      if (savedLocks) setLockedMissions(JSON.parse(savedLocks));
+      
+      const savedLevelLocks = localStorage.getItem('lockedLevels');
+      if (savedLevelLocks) {
+        setLockedLevels(JSON.parse(savedLevelLocks));
+      } else {
+        // Si es la primera vez, guardamos el estado inicial (K6 libre, resto bloqueado)
+        localStorage.setItem('lockedLevels', JSON.stringify([3, 4, 5, 7]));
+      }
       
       const savedUser = localStorage.getItem('adminUser');
       if (savedUser) {
@@ -101,7 +110,7 @@ const App: React.FC = () => {
     [activeClass]
   );
 
-  const activeConfig = DASHBOARD_CONFIG[activeClass] || DASHBOARD_CONFIG[3];
+  const activeConfig = DASHBOARD_CONFIG[activeClass] || DASHBOARD_CONFIG[6];
   const isCurrentLevelLocked = lockedLevels.includes(activeClass);
 
   return (
@@ -109,7 +118,6 @@ const App: React.FC = () => {
       <header className="py-12 px-6 flex flex-col items-center">
         <div className="absolute top-0 left-0 w-full h-3 bg-gradient-to-r from-orange-500 via-yellow-400 to-red-600 shadow-xl"></div>
         
-        {/* Nav de Niveles: Se oculta para alumnos si hay forcedLevel, pero el admin siempre lo ve */}
         {(!forcedLevel || isAdmin) && (
           <div className="flex bg-slate-800/40 p-2 rounded-[2.5rem] mb-12 gap-3 backdrop-blur-xl border border-white/5 shadow-2xl overflow-x-auto max-w-full no-scrollbar">
             {[3, 4, 5, 6, 7].map(num => (
@@ -125,19 +133,12 @@ const App: React.FC = () => {
                   <button 
                     onClick={() => toggleLevelLock(num)}
                     className={`p-2 rounded-xl transition-all ${lockedLevels.includes(num) ? 'bg-red-500' : 'bg-emerald-500 hover:scale-110'} shadow-lg`}
-                    title={lockedLevels.includes(num) ? "Desbloquear Nivel" : "Bloquear Nivel"}
                   >
                     {lockedLevels.includes(num) ? '🔓' : '🔒'}
                   </button>
                 )}
               </div>
             ))}
-          </div>
-        )}
-
-        {forcedLevel && !isAdmin && (
-          <div className="mb-6 bg-emerald-400/10 border border-emerald-400/30 px-6 py-2 rounded-full text-emerald-400 font-black text-xs tracking-widest uppercase animate-pulse">
-            Acceso Directo • Klassen {forcedLevel}
           </div>
         )}
 
@@ -165,24 +166,6 @@ const App: React.FC = () => {
               <button onClick={() => setShowResultsPanel(!showResultsPanel)} className="px-10 py-5 bg-indigo-600 text-white rounded-[2rem] font-black text-xl shadow-2xl hover:bg-indigo-500 border border-white/10">
                 {showResultsPanel ? '🏠 VER ACTIVIDADES' : '📊 VER REPORTES'}
               </button>
-              
-              <div className="bg-slate-800/80 backdrop-blur-md p-3 rounded-[2rem] flex gap-2 border border-white/10 shadow-2xl">
-                 <span className="text-[10px] font-black uppercase self-center px-4 opacity-40 leading-tight">Copiar Link<br/>Enfocado:</span>
-                 {[3,4,5,6,7].map(l => (
-                   <button 
-                    key={l}
-                    onClick={() => {
-                      const url = new URL(window.location.href);
-                      url.searchParams.set('k', l.toString());
-                      navigator.clipboard.writeText(url.toString());
-                      alert(`¡Enlace para KLASSEN ${l} copiado!`);
-                    }}
-                    className="w-12 h-12 bg-white/5 rounded-2xl flex items-center justify-center hover:bg-white/20 font-black text-xl transition-all hover:scale-110 active:scale-90"
-                   >
-                     {l}
-                   </button>
-                 ))}
-              </div>
             </div>
           )}
         </div>
